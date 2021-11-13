@@ -28,10 +28,11 @@ _START_VOCAB = ['_PAD', '_UNK', '_GO', '_EOS', '_NAF_H', '_NAF_R', '_NAF_T']
 class IEMSAModel(object):
     def __init__(self,
                  num_symbols,
-                 num_emotions,
+                 num_emotions,  # line added here
                  num_embed_units,
                  num_units,
                  num_layers,
+                 emotion_targets,  # line added here
                  is_train,
                  vocab=None,
                  embed=None,
@@ -41,6 +42,10 @@ class IEMSAModel(object):
                  num_samples=512,
                  max_length=30,
                  use_lstm=True):
+
+        # sentiment ids for each story in batch
+        self.emotion_targets = emotion_targets
+
 
         self.posts_1 = tf.placeholder(tf.string, shape=(None, None))
         self.posts_2 = tf.placeholder(tf.string, shape=(None, None))
@@ -199,7 +204,9 @@ class IEMSAModel(object):
         else:
             cell = MultiRNNCell([GRUCell(num_units)] * num_layers)
 
-        output_fn, sampled_sequence_loss, emo_classification_fn, emo_classificatio_loss = output_projection_layer(
+        # added emo_classification_fn, loss_fn, that is returned from output_project_layer
+        # line added here
+        output_fn, sampled_sequence_loss, emo_classification_fn, emo_classification_loss_fn = output_projection_layer(
             num_units,
             num_symbols, num_emotions, num_samples)
 
@@ -278,8 +285,11 @@ class IEMSAModel(object):
                 self.decoder_loss = sampled_sequence_loss(self.decoder_output,
                                                           self.responses_target, self.decoder_mask)
 
+                # emo_classifier_fn is called on decoder output
+                # emo loss is called on emo_output and emotion target
+                # line added here
                 self.emo_output = emo_classification_fn(self.decoder_output)
-                self.emo_loss = emo_classification_loss(self.emo_output, self.emotion_targets)
+                self.emo_loss = emo_classification_loss_fn(self.emo_output, self.emotion_targets)
 
             self.params = tf.trainable_variables()
 
@@ -292,6 +302,8 @@ class IEMSAModel(object):
             # opt = tf.train.GradientDescentOptimizer(self.learning_rate)
             opt = tf.train.MomentumOptimizer(self.learning_rate, 0.9)
 
+            # line added here
+            # emo_loss is added to gradients variable for backprop
             gradients = tf.gradients(self.decoder_loss
                                      + self.decoder_loss_2
                                      + self.decoder_loss_3

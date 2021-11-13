@@ -17,7 +17,7 @@ NUM_EMOTIONS = 10
 
 tf.app.flags.DEFINE_boolean("is_train", True, "Set to False to inference.")
 tf.app.flags.DEFINE_integer("symbols", 10000, "vocabulary size.")
-tf.app.flags.DEFINE_integer("emotions", NUM_EMOTIONS, "Number of emotion labels")
+tf.app.flags.DEFINE_integer("emotions", NUM_EMOTIONS, "Number of emotion labels") # line added here
 tf.app.flags.DEFINE_integer("embed_units", 200, "Size of word embedding.")
 tf.app.flags.DEFINE_integer("units", 512, "Size of each model layer.")
 tf.app.flags.DEFINE_integer("layers", 2, "Number of layers in the model.")
@@ -303,10 +303,11 @@ with tf.Session(config=config) as sess:
 
         model = IEMSAModel(
             FLAGS.symbols,
-            FLAGS.emotions,
+            FLAGS.emotions, # line added here
             FLAGS.embed_units,
             FLAGS.units,
             FLAGS.layers,
+            emotion_targets, # line added here
             is_train=True,
             vocab=vocab,
             embed=embed)
