@@ -8,6 +8,7 @@ import sys
 import time
 import random
 from pattern.en import lemma
+import scipy
 
 random.seed(time.time())
 
@@ -26,11 +27,15 @@ tf.app.flags.DEFINE_string("data_dir", "./data", "Data directory")
 tf.app.flags.DEFINE_string("train_dir", "./train", "Training directory.")
 tf.app.flags.DEFINE_integer("per_checkpoint", 1000, "How many steps to do per checkpoint.")
 tf.app.flags.DEFINE_integer("inference_version", 0, "The version for inferencing.")
-tf.app.flags.DEFINE_integer("triple_num", 10, "max number of triple for each query")
+tf.app.flags.DEFINE_integer("triple_num", 20, "max number of triple for each query")
 tf.app.flags.DEFINE_boolean("log_parameters", True, "Set to True to show the parameters")
 tf.app.flags.DEFINE_string("inference_path", "", "Set filename of inference, default isscreen")
 
 FLAGS = tf.app.flags.FLAGS
+
+SENTIMENTS = ['happy', 'sad', 'angry', 'shock', 'surprise']
+sentiment2id = {'happy': 0, 'sad': 1, 'angry': 2, 'shock': 3, 'surprise': 4}
+id2sentiment = {0: 'happy', 1: 'sad', 2: 'angry', 3: 'shock', 4: 'surprise'}
 
 
 def load_data(path, fname):
@@ -44,7 +49,9 @@ def load_data(path, fname):
         response = [line.strip().split() for line in f.readlines()]
     data = []
     for p, r in zip(post, response):
-        data.append({'post': p, 'response': r})
+        # custominfo
+        for sentiment in SENTIMENTS:
+            data.append({'post': p, 'response': r, 'sentiment': sentiment})
     return data
 
 
@@ -126,6 +133,8 @@ def gen_batched_data(data):
     decoder_len = max([len(item['response']) for item in data]) + 1
     posts_1, posts_2, posts_3, posts_4, posts_length_1, posts_length_2, posts_length_3, posts_length_4, responses, responses_length = [], [], [], [], [], [], [], [], [], []
 
+    sentiments = [sentiment2id[item['sentiment']] for item in data]  # custominfo
+
     def padding(sent, l):
         return sent + ['_EOS'] + ['_PAD'] * (l - len(sent) - 1)
 
@@ -146,16 +155,56 @@ def gen_batched_data(data):
     entity = [[], [], [], []]
     for item in data:
         for i in range(4):
-            entity[i].append([])
+            temp_entity = []  # custominfo
             for word in item['post'][i]:
                 try:
                     w = lemma(word).encode("ascii")
                 except UnicodeDecodeError, e:
                     w = word
                 if w in relation:
-                    entity[i][-1].append(relation[w])
+                    temp_entity.append(relation[w]) # custominfo
                 else:
-                    entity[i][-1].append([['_NAF_H', '_NAF_R', '_NAF_T']])
+                    temp_entity.append([['_NAF_H', '_NAF_R', '_NAF_T']])
+           # custominfo
+            sentiment = item['sentiment']
+            tail_words = set([])  # to get unique words
+            for word_relations in temp_entity:
+                if len(word_relations) > 1 or word_relations[-1][-1] != '_NAF_T':
+                    # the word is a named entity with relations
+                    tail_words.update([r[2] for r in word_relations])
+            tail_words = list(tail_words)  # back to list
+            tail_words_np = np.array(tail_words)
+            tail_scores = []
+            for word in tail_words:
+                tail_scores.append(1-scipy.spatial.distance.cosine(embed[vocab[sentiment]], embed[vocab[word]]))
+            tail_scores_np = np.array(tail_scores)
+            n = 0
+            if len(tail_words) > 8:
+                n = 4
+            elif len(tail_words) > 6:
+                n = 2
+            elif len(tail_words) > 4:
+                n = 1
+            if n > 0:
+                lowest_n_ind = np.argpartition(tail_scores_np, n)[:n-1]
+                filtered_tail_words = set(tail_words_np[lowest_n_ind])  # for faster lookup below
+                filtered_temp_entity = []  # after removing relations which have the filtered tail words
+                for word_rels in temp_entity:
+                    updated_word_rels = []
+                    for rel in word_rels:
+                        if rel[2] not in filtered_tail_words:
+                            updated_word_rels.append(rel)
+                    filtered_temp_entity.append(updated_word_rels)
+                entity[i].append(filtered_temp_entity)
+            else:
+                entity[i].append(temp_entity)
+
+    # narrow down triplets here
+    # for each sentence (entity[i])
+    # relation is a dict
+    # relation[w] is a list of lists
+    # get_word_vector embed[vocab[word]]
+
     max_response_length = [0, 0, 0, 0]
     max_triple_length = [0, 0, 0, 0]
     for i in range(4):
@@ -208,7 +257,8 @@ def gen_batched_data(data):
                     'posts_length_3': posts_length_3,
                     'posts_length_4': posts_length_4,
                     'responses': np.array(responses),
-                    'responses_length': responses_length}
+                    'responses_length': responses_length,
+                    'sentiments': np.array(sentiments)} #custominfo
     return batched_data
 
 

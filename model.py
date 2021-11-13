@@ -69,6 +69,7 @@ class IEMSAModel(object):
 
         self.responses = tf.placeholder(tf.string, shape=(None, None))
         self.responses_length = tf.placeholder(tf.int32, shape=(None))
+        self.sentiments = tf.placeholder(tf.int32, shape=(None))  # custominfo
 
         self.epoch = tf.Variable(0, trainable=False, name='epoch')
         self.epoch_add_op = self.epoch.assign(self.epoch + 1)
@@ -362,7 +363,8 @@ class IEMSAModel(object):
                       self.posts_length_3: data['posts_length_3'],
                       self.posts_length_4: data['posts_length_4'],
                       self.responses: data['responses'],
-                      self.responses_length: data['responses_length']}
+                      self.responses_length: data['responses_length'],
+                      self.sentiments: data['sentiments']}  # custominfo
         if forward_only:
             output_feed = [self.decoder_loss, self.alignments_2]
         else:
