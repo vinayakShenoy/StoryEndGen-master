@@ -270,8 +270,10 @@ def train(model, sess, dataset):
         st, ed = ed, ed + FLAGS.batch_size if ed + \
                                               FLAGS.batch_size < len(dataset) else len(dataset)
         batch_data = gen_batched_data(dataset[st:ed])
+        break
         outputs = model.step_decoder(sess, batch_data)
         loss.append(outputs[0])
+        break
 
     sess.run(model.epoch_add_op)
     return np.mean(loss)
