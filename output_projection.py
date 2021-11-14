@@ -1,8 +1,10 @@
 import tensorflow as tf
 from tensorflow.contrib.layers.python.layers import layers
 from tensorflow.python.ops import variable_scope
+from tensorflow.python.framework import ops
+import numpy as np
 
-def output_projection_layer(num_units, num_symbols, num_emotions, num_samples=None, name="output_projection"):
+def output_projection_layer(num_units, num_symbols, num_emotions, decoder_len, num_samples=None, name="output_projection"):
     def output_fn(outputs):
         return layers.linear(outputs, num_symbols, scope=name)
 
@@ -27,12 +29,11 @@ def output_projection_layer(num_units, num_symbols, num_emotions, num_samples=No
 
     # lines added below
     def emotion_classification_fn(outputs):
+        #local_outputs = tf.reshape(outputs, [128, decoder_len*num_units])
         return layers.linear(outputs, num_emotions, scope=name)
 
-    def emotion_classification_loss(outputs, targets):
-        with variable_scope.variable_scope('Emo/%s' % name):
-            loss = tf.nn.softmax_cross_entropy_with_logits_v2(outputs, targets)
-            return loss
-    
+    def emotion_classification_loss(logits, labels):
+        loss = tf.nn.softmax_cross_entropy_with_logits(labels=labels, logits=logits)
+        return loss
+
     return output_fn, sampled_sequence_loss, emotion_classification_fn, emotion_classification_loss
-    

@@ -8,16 +8,16 @@ import sys
 import time
 import random
 from pattern.en import lemma
-import scipy
+from scipy.spatial import distance
 
 random.seed(time.time())
 
 from model import IEMSAModel, _START_VOCAB
 
-NUM_EMOTIONS = 10
+NUM_EMOTIONS = 2
 
 tf.app.flags.DEFINE_boolean("is_train", True, "Set to False to inference.")
-tf.app.flags.DEFINE_integer("symbols", 10000, "vocabulary size.")
+tf.app.flags.DEFINE_integer("symbols", 42000, "vocabulary size.")
 tf.app.flags.DEFINE_integer("emotions", NUM_EMOTIONS, "Number of emotion labels") # line added here
 tf.app.flags.DEFINE_integer("embed_units", 200, "Size of word embedding.")
 tf.app.flags.DEFINE_integer("units", 512, "Size of each model layer.")
@@ -33,7 +33,7 @@ tf.app.flags.DEFINE_string("inference_path", "", "Set filename of inference, def
 
 FLAGS = tf.app.flags.FLAGS
 
-SENTIMENTS = ['happy', 'sad', 'angry', 'shock', 'surprise']
+SENTIMENTS = ['happy', 'sad']#, 'angry', 'shock', 'surprise']
 sentiment2id = {'happy': 0, 'sad': 1, 'angry': 2, 'shock': 3, 'surprise': 4}
 id2sentiment = {0: 'happy', 1: 'sad', 2: 'angry', 3: 'shock', 4: 'surprise'}
 
@@ -167,16 +167,17 @@ def gen_batched_data(data):
                     temp_entity.append([['_NAF_H', '_NAF_R', '_NAF_T']])
            # custominfo
             sentiment = item['sentiment']
+            #print(sentiment)
             tail_words = set([])  # to get unique words
             for word_relations in temp_entity:
-                if len(word_relations) > 1 or word_relations[-1][-1] != '_NAF_T':
+                if len(word_relations) > 1 or (len(word_relations)!=0 and word_relations[-1][-1] != '_NAF_T'):
                     # the word is a named entity with relations
                     tail_words.update([r[2] for r in word_relations])
             tail_words = list(tail_words)  # back to list
             tail_words_np = np.array(tail_words)
             tail_scores = []
             for word in tail_words:
-                tail_scores.append(1-scipy.spatial.distance.cosine(embed[vocab[sentiment]], embed[vocab[word]]))
+                tail_scores.append(1-distance.cosine(embed[vocab_dict[sentiment]], embed[vocab_dict[word]])) 
             tail_scores_np = np.array(tail_scores)
             n = 0
             if len(tail_words) > 8:
@@ -188,6 +189,7 @@ def gen_batched_data(data):
             if n > 0:
                 lowest_n_ind = np.argpartition(tail_scores_np, n)[:n-1]
                 filtered_tail_words = set(tail_words_np[lowest_n_ind])  # for faster lookup below
+                #print(filtered_tail_words)
                 filtered_temp_entity = []  # after removing relations which have the filtered tail words
                 for word_rels in temp_entity:
                     updated_word_rels = []
@@ -259,21 +261,23 @@ def gen_batched_data(data):
                     'responses': np.array(responses),
                     'responses_length': responses_length,
                     'sentiments': np.array(sentiments)} #custominfo
+   # print("Senti shape: ", batched_data['sentiments'].shape)
+    #print("Posts shape: ", batched_data['posts_1'].shape)
+    #print("responses length: ", batched_data['responses_length'])
     return batched_data
 
 
 def train(model, sess, dataset):
     st, ed, loss = 0, 0, []
     while ed < len(dataset):
-        print
-        "epoch %d, training %.4f %%...\r" % (epoch, float(ed) / len(dataset) * 100),
+        print "epoch %d, training %.4f %%...\r" % (epoch, float(ed) / len(dataset) * 100),
         st, ed = ed, ed + FLAGS.batch_size if ed + \
                                               FLAGS.batch_size < len(dataset) else len(dataset)
         batch_data = gen_batched_data(dataset[st:ed])
-        break
+        #print("Posts_length ", model.responses_length.shape)
+        #print("Sentiments shape", model.sentiments.shape)
         outputs = model.step_decoder(sess, batch_data)
         loss.append(outputs[0])
-        break
 
     sess.run(model.epoch_add_op)
     return np.mean(loss)
@@ -352,6 +356,8 @@ with tf.Session(config=config) as sess:
 
         # load the relations from triples_shrink.txt
         relation = load_relation(FLAGS.data_dir)
+        
+        emotion_targets_train = [sentiment2id[item['sentiment']] for item in data_train]
 
         model = IEMSAModel(
             FLAGS.symbols,
@@ -359,7 +365,7 @@ with tf.Session(config=config) as sess:
             FLAGS.embed_units,
             FLAGS.units,
             FLAGS.layers,
-            emotion_targets, # line added here
+            emotion_targets_train, # line added here
             is_train=True,
             vocab=vocab,
             embed=embed)
