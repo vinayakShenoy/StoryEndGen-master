@@ -33,7 +33,7 @@ class IEMSAModel(object):
                  num_units,
                  num_layers,
                  emotion_targets,  # line added here
-                 is_train,
+                 is_train=True,
                  vocab=None,
                  embed=None,
                  learning_rate=0.1,
@@ -69,6 +69,7 @@ class IEMSAModel(object):
 
         self.responses = tf.placeholder(tf.string, shape=(None, None))
         self.responses_length = tf.placeholder(tf.int32, shape=(None))
+        self.sentiments = tf.placeholder(tf.int32, shape=(None))  # custominfo
 
         self.epoch = tf.Variable(0, trainable=False, name='epoch')
         self.epoch_add_op = self.epoch.assign(self.epoch + 1)
@@ -206,9 +207,7 @@ class IEMSAModel(object):
 
         # added emo_classification_fn, loss_fn, that is returned from output_project_layer
         # line added here
-        output_fn, sampled_sequence_loss, emo_classification_fn, emo_classification_loss_fn = output_projection_layer(
-            num_units,
-            num_symbols, num_emotions, num_samples)
+        output_fn, sampled_sequence_loss, emo_classification_fn, emo_classification_loss_fn = output_projection_layer(num_units, num_symbols, num_emotions, decoder_len, num_samples)
 
         encoder_output_1, encoder_state_1 = dynamic_rnn(cell, self.encoder_input_1, self.posts_length_1,
                                                         dtype=tf.float32, scope="encoder")
@@ -288,8 +287,9 @@ class IEMSAModel(object):
                 # emo_classifier_fn is called on decoder output
                 # emo loss is called on emo_output and emotion target
                 # line added here
+
                 self.emo_output = emo_classification_fn(self.decoder_output)
-                self.emo_loss = emo_classification_loss_fn(self.emo_output, self.emotion_targets)
+                self.emo_loss = emo_classification_loss_fn(self.emo_output, self.sentiments)
 
             self.params = tf.trainable_variables()
 
@@ -362,7 +362,8 @@ class IEMSAModel(object):
                       self.posts_length_3: data['posts_length_3'],
                       self.posts_length_4: data['posts_length_4'],
                       self.responses: data['responses'],
-                      self.responses_length: data['responses_length']}
+                      self.responses_length: data['responses_length'],
+                      self.sentiments: data['sentiments']}  # custominfo
         if forward_only:
             output_feed = [self.decoder_loss, self.alignments_2]
         else:
