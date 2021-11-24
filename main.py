@@ -407,9 +407,11 @@ with tf.Session(config=config) as sess:
     else:
         model = IEMSAModel(
             FLAGS.symbols,
+            FLAGS.emotions,  # line added here
             FLAGS.embed_units,
             FLAGS.units,
             FLAGS.layers,
+            emotion_targets_train=None,  # line added here
             is_train=False,
             vocab=None)
 

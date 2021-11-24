@@ -33,7 +33,7 @@ class IEMSAModel(object):
                  num_units,
                  num_layers,
                  emotion_targets,  # line added here
-                 is_train,
+                 is_train=True,
                  vocab=None,
                  embed=None,
                  learning_rate=0.1,
