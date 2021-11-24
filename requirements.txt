@@ -1,0 +1,12 @@
+certifi==2020.6.20
+funcsigs==1.0.2
+mkl-fft==1.0.6
+mkl-random==1.0.1
+mock==3.0.5
+numpy==1.14.5
+Pattern==2.6
+protobuf==3.17.3
+scipy==1.2.3
+six==1.16.0
+TBB==0.1
+tensorflow==1.0.1
