@@ -8,5 +8,4 @@ Pattern==2.6
 protobuf==3.17.3
 scipy==1.2.3
 six==1.16.0
-TBB==0.1
 tensorflow==1.0.1
