@@ -241,6 +241,10 @@ def gen_batched_data(data):
 
     entity_mask_0, entity_mask_1, entity_mask_2, entity_mask_3 = entity_mask[0], entity_mask[1], entity_mask[2], \
                                                                  entity_mask[3]
+    
+    sentiments = np.array(sentiments)
+    one_hot_sentiments = np.zeros((sentiments.size, sentiments.max()+1))
+    one_hot_sentiments[np.arange(sentiments.size), sentiments] = 1
 
     batched_data = {'posts_1': np.array(posts_1),
                     'posts_2': np.array(posts_2),
@@ -260,10 +264,11 @@ def gen_batched_data(data):
                     'posts_length_4': posts_length_4,
                     'responses': np.array(responses),
                     'responses_length': responses_length,
-                    'sentiments': np.array(sentiments)} #custominfo
+                    'sentiments': one_hot_sentiments} #custominfo
    # print("Senti shape: ", batched_data['sentiments'].shape)
     #print("Posts shape: ", batched_data['posts_1'].shape)
     #print("responses length: ", batched_data['responses_length'])
+    #print("Sentiments1:", np.array(one_hot_sentiments))
     return batched_data
 
 
@@ -411,7 +416,7 @@ with tf.Session(config=config) as sess:
             FLAGS.embed_units,
             FLAGS.units,
             FLAGS.layers,
-            emotion_targets_train=None,  # line added here
+            emotion_targets=None,  # line added here
             is_train=False,
             vocab=None)
 

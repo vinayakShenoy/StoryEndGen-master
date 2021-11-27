@@ -69,7 +69,7 @@ class IEMSAModel(object):
 
         self.responses = tf.placeholder(tf.string, shape=(None, None))
         self.responses_length = tf.placeholder(tf.int32, shape=(None))
-        self.sentiments = tf.placeholder(tf.int32, shape=(None))  # custominfo
+        self.sentiments = tf.placeholder(tf.int32, shape=(None, 2))  # custominfo
 
         self.epoch = tf.Variable(0, trainable=False, name='epoch')
         self.epoch_add_op = self.epoch.assign(self.epoch + 1)
@@ -259,7 +259,7 @@ class IEMSAModel(object):
                                                                                      self.posts_length_4,
                                                                                      scope="decoder")
             self.alignments_4 = tf.transpose(alignments_ta_4.stack(), perm=[1, 0, 2])
-
+            print("Decoder loss 4")
             self.decoder_loss_4 = sampled_sequence_loss(encoder_output_4,
                                                         self.posts_4_target, self.encoder_4_mask)
 
@@ -288,7 +288,8 @@ class IEMSAModel(object):
                 # emo loss is called on emo_output and emotion target
                 # line added here
 
-                self.emo_output = emo_classification_fn(self.decoder_output)
+                self.emo_output = emo_classification_fn(encoder_output_4)
+                #print(self.emo_output.shape)
                 self.emo_loss = emo_classification_loss_fn(self.emo_output, self.sentiments)
 
             self.params = tf.trainable_variables()
@@ -364,6 +365,8 @@ class IEMSAModel(object):
                       self.responses: data['responses'],
                       self.responses_length: data['responses_length'],
                       self.sentiments: data['sentiments']}  # custominfo
+        #print("Sentiments: ", self.sentiments)
+        
         if forward_only:
             output_feed = [self.decoder_loss, self.alignments_2]
         else:

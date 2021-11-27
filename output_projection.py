@@ -10,13 +10,20 @@ def output_projection_layer(num_units, num_symbols, num_emotions, decoder_len, n
 
     def sampled_sequence_loss(outputs, targets, masks):
         with variable_scope.variable_scope('decoder/%s' % name):
+            #print(outputs.shape)
+            #print(targets.shape)
+            #print(masks.shape)
+
             weights = tf.transpose(tf.get_variable("weights", [num_units, num_symbols]))
             bias = tf.get_variable("biases", [num_symbols])
-            
+            #print(weights.shape)
             local_labels = tf.reshape(targets, [-1, 1])
             local_outputs = tf.reshape(outputs, [-1, num_units])
             local_masks = tf.reshape(masks, [-1])
-            
+            #print(local_labels.shape)
+            #print(local_outputs.shape)
+            #print(local_masks.shape)
+
             local_loss = tf.nn.sampled_softmax_loss(weights, bias, local_labels,
                     local_outputs, num_samples, num_symbols)
             local_loss = local_loss * local_masks
@@ -29,10 +36,15 @@ def output_projection_layer(num_units, num_symbols, num_emotions, decoder_len, n
 
     # lines added below
     def emotion_classification_fn(outputs):
-        #local_outputs = tf.reshape(outputs, [128, decoder_len*num_units])
+        # reduce mean in middle dimension (128, ?, 512) to (128, 1, 512)
+        outputs = tf.reduce_mean(outputs, axis=1)
+        #print(outputs.shape)
+        outputs = tf.reshape(outputs, [-1, num_units])
         return layers.linear(outputs, num_emotions, scope=name)
 
     def emotion_classification_loss(logits, labels):
+        #print(logits.shape)
+        #print(labels)
         loss = tf.nn.softmax_cross_entropy_with_logits(labels=labels, logits=logits)
         return loss
 
