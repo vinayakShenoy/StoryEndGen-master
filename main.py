@@ -268,7 +268,7 @@ def gen_batched_data(data):
    # print("Senti shape: ", batched_data['sentiments'].shape)
     #print("Posts shape: ", batched_data['posts_1'].shape)
     #print("responses length: ", batched_data['responses_length'])
-    print("Sentiments1:", np.array(one_hot_sentiments))
+    #print("Sentiments1:", np.array(one_hot_sentiments))
     return batched_data
 
 
@@ -416,7 +416,7 @@ with tf.Session(config=config) as sess:
             FLAGS.embed_units,
             FLAGS.units,
             FLAGS.layers,
-            emotion_targets_train=None,  # line added here
+            emotion_targets=None,  # line added here
             is_train=False,
             vocab=None)
 
