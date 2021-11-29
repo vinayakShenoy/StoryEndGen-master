@@ -172,17 +172,17 @@ class IEMSAModel(object):
             ####### LEAM : START ########
 
             # interleave head and tail, such that shape=(2*N_x, E)
-            interleaved_head_tail_1 = tf.stack([head_1, tail_1], axis=1)
+            interleaved_head_tail_1 = tf.stack([head_1, tail_1], axis=3)
 
             # sentiment embedding, shape (E, K)
 
             # cosine similarity G, normalized, shape (2*N_x, K)
             normalize_h_t = tf.nn.l2_normalize(interleaved_head_tail_1, 0)
-            normalize_sentiment = tf.nn.l2_normalize(sentiments, 0)
+            normalize_sentiment = tf.nn.l2_normalize(self.sentiments, 0)
             g_1 = tf.matmul(normalize_h_t, normalize_sentiment)
 
             # h;t paired non-linearity
-            g_1 = tf.reshape(g_1, shape=(g_1.shape[0]/2, 2, -1)) # (2*N_x, K) -> (N_x, 2, K)
+            g_1 = tf.reshape(g_1, shape=(g_1.shape[0]/2, 2, -1)) # (batch, resp_len, 2*N_x, K) -> (N_x, 2, K)
             g_1 = tf.transpose(g_1, perm=(0,2,1)) # (N_x, 2, K) -> (N_x, K, 2)
             g_1 = tf.reshape(g_1, shape=(-1, 2))    # (N_x, K, 2)
             u_l_1 = tf.layers.dense(g_1, 2, activation='relu') # (N_x, K, 2) -> (N_x, K)
