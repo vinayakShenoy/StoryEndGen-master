@@ -246,6 +246,8 @@ def gen_batched_data(data):
     one_hot_sentiments = np.zeros((sentiments.size, sentiments.max()+1))
     one_hot_sentiments[np.arange(sentiments.size), sentiments] = 1
 
+
+
     batched_data = {'posts_1': np.array(posts_1),
                     'posts_2': np.array(posts_2),
                     'posts_3': np.array(posts_3),
@@ -361,8 +363,8 @@ with tf.Session(config=config) as sess:
 
         # load the relations from triples_shrink.txt
         relation = load_relation(FLAGS.data_dir)
-        
-        emotion_targets_train = [sentiment2id[item['sentiment']] for item in data_train]
+
+        sentiment_embed = np.stack([embed[vocab_dict['happy']], embed[vocab_dict['sad']]])
 
         model = IEMSAModel(
             FLAGS.symbols,
@@ -370,7 +372,7 @@ with tf.Session(config=config) as sess:
             FLAGS.embed_units,
             FLAGS.units,
             FLAGS.layers,
-            emotion_targets_train, # line added here
+            sentiment_embed, # line added here
             is_train=True,
             vocab=vocab,
             embed=embed)
