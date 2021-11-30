@@ -1,0 +1,16 @@
+loss-fix-output :: output_2814.txt :: 0.24469112713881877 
+loss-fix-output :: output_1407.txt :: 0.2396268972322729 
+
+no-loss-output :: output_5628.txt :: 0.2441614585780743 
+no-loss-output :: output_4221.txt :: 0.25205582444434005 
+no-loss-output :: output_1407.txt :: 0.23102767727080492 
+no-loss-output :: output_5632.txt :: 0.2080964240402237 
+
+garbage-output :: output_22512.txt :: 0.0013309966695023603 
+garbage-output :: output_1407.txt :: 0.19745312720266905 
+
+average-vector-output :: output_2814.txt :: 0.24928339833654437 
+average-vector-output :: output_5628.txt :: 0.25196184389831305 
+average-vector-output :: output_4221.txt :: 0.2569898031107561 
+average-vector-output :: output_7035.txt :: 0.008137176773408956 
+
