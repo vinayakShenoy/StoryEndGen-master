@@ -175,7 +175,7 @@ class IEMSAModel(object):
             # interleave head and tail, such that shape=
             interleaved_head_tail_1 = tf.stack([head_1, tail_1], axis=3) # (batch_size, max_response_length, N_x, 2, E)
             batch_size_1, max_response_length_1, N_x_1, _, embed_size_1 = interleaved_head_tail_1.shape
-            interleaved_head_tail_1 = tf.reshape(interleaved_head_tail_1, shape=(batch_size_1, max_response_length_1, N_x_1*2, embed_size_1)) # (batch_size, max_response_length, N_x*2, E)
+            interleaved_head_tail_1 = tf.reshape(interleaved_head_tail_1, [batch_size_1, max_response_length_1, N_x_1*2, embed_size_1]) # (batch_size, max_response_length, N_x*2, E)
 
             # sentiment embedding, shape (E, K)
 
@@ -186,7 +186,7 @@ class IEMSAModel(object):
             g_1 = tf.matmul(normalize_h_t, tf.transpose(normalize_sentiment))
 
             # h;t paired non-linearity
-            g_1 = tf.reshape(g_1, shape=(g_1.shape[0], g_1.shape[1], g_1.shape[2]/2, 2, -1)) # (batch, resp_len, 2*N_x, K) -> (b, resp_len, N_x, 2, K)
+            g_1 = tf.reshape(g_1, [g_1.shape[0], g_1.shape[1], g_1.shape[2]/2, 2, -1]) # (batch, resp_len, 2*N_x, K) -> (b, resp_len, N_x, 2, K)
             g_1 = tf.transpose(g_1, perm=(0, 1, 2, 4, 3)) # (b, resp, N_x, 2, K) -> (b, resp, N_x, K, 2)
             #g_1 = tf.reshape(g_1, shape=(-1, 2))    # (b, resp, N_x, K, 2)
             u_l_1 = tf.layers.dense(g_1, 2, activation='relu') # (b, resp, N_x, K, 2) -> (b, resp, N_x, K)
@@ -220,7 +220,7 @@ class IEMSAModel(object):
             # interleave head and tail, such that shape=
             interleaved_head_tail_2 = tf.stack([head_2, tail_2], axis=3) # (batch_size, max_response_length, N_x, 2, E)
             batch_size_2, max_response_length_2, N_x_2, _, embed_size_2 = interleaved_head_tail_2.shape
-            interleaved_head_tail_2 = tf.reshape(interleaved_head_tail_2, shape=(batch_size_2, max_response_length_2, N_x_2*2, embed_size_2)) # (batch_size, max_response_length, N_x*2, E)
+            interleaved_head_tail_2 = tf.reshape(interleaved_head_tail_2, [batch_size_2, max_response_length_2, N_x_2*2, embed_size_2]) # (batch_size, max_response_length, N_x*2, E)
 
             # sentiment embedding, shape (E, K)
 
@@ -231,7 +231,7 @@ class IEMSAModel(object):
             g_2 = tf.matmul(normalize_h_t, tf.transpose(normalize_sentiment))
 
             # h;t paired non-linearity
-            g_2 = tf.reshape(g_2, shape=(g_2.shape[0], g_2.shape[1], g_2.shape[2]/2, 2, -1)) # (batch, resp_len, 2*N_x, K) -> (b, resp_len, N_x, 2, K)
+            g_2 = tf.reshape(g_2, [g_2.shape[0], g_2.shape[1], g_2.shape[2]/2, 2, -1]) # (batch, resp_len, 2*N_x, K) -> (b, resp_len, N_x, 2, K)
             g_2 = tf.transpose(g_2, perm=(0, 1, 2, 4, 3)) # (b, resp, N_x, 2, K) -> (b, resp, N_x, K, 2)
             #g_1 = tf.reshape(g_1, shape=(-1, 2))    # (b, resp, N_x, K, 2)
             u_l_2 = tf.layers.dense(g_2, 2, activation='relu') # (b, resp, N_x, K, 2) -> (b, resp, N_x, K)
@@ -265,7 +265,7 @@ class IEMSAModel(object):
             # interleave head and tail, such that shape=
             interleaved_head_tail_3 = tf.stack([head_3, tail_3], axis=3) # (batch_size, max_response_length, N_x, 2, E)
             batch_size_3, max_response_length_3, N_x_3, _, embed_size_3 = interleaved_head_tail_3.shape
-            interleaved_head_tail_3 = tf.reshape(interleaved_head_tail_3, shape=(batch_size_3, max_response_length_3, N_x_3*2, embed_size_3)) # (batch_size, max_response_length, N_x*2, E)
+            interleaved_head_tail_3 = tf.reshape(interleaved_head_tail_3, [batch_size_3, max_response_length_3, N_x_3*2, embed_size_3]) # (batch_size, max_response_length, N_x*2, E)
 
             # sentiment embedding, shape (E, K)
 
@@ -276,7 +276,7 @@ class IEMSAModel(object):
             g_3 = tf.matmul(normalize_h_t, tf.transpose(normalize_sentiment))
 
             # h;t paired non-linearity
-            g_3 = tf.reshape(g_3, shape=(g_3.shape[0], g_3.shape[1], g_3.shape[2]/2, 2, -1)) # (batch, resp_len, 2*N_x, K) -> (b, resp_len, N_x, 2, K)
+            g_3 = tf.reshape(g_3, [g_3.shape[0], g_3.shape[1], g_3.shape[2]/2, 2, -1]) # (batch, resp_len, 2*N_x, K) -> (b, resp_len, N_x, 2, K)
             g_3 = tf.transpose(g_3, perm=(0, 1, 2, 4, 3)) # (b, resp, N_x, 2, K) -> (b, resp, N_x, K, 2)
             #g_1 = tf.reshape(g_1, shape=(-1, 2))    # (b, resp, N_x, K, 2)
             u_l_3 = tf.layers.dense(g_3, 2, activation='relu') # (b, resp, N_x, K, 2) -> (b, resp, N_x, K)
@@ -309,7 +309,7 @@ class IEMSAModel(object):
             # interleave head and tail, such that shape=
             interleaved_head_tail_4 = tf.stack([head_4, tail_4], axis=3) # (batch_size, max_response_length, N_x, 2, E)
             batch_size_4, max_response_length_4, N_x_4, _, embed_size_4 = interleaved_head_tail_4.shape
-            interleaved_head_tail_4 = tf.reshape(interleaved_head_tail_4, shape=(batch_size_4, max_response_length_4, N_x_4*2, embed_size_4)) # (batch_size, max_response_length, N_x*2, E)
+            interleaved_head_tail_4 = tf.reshape(interleaved_head_tail_4, [batch_size_4, max_response_length_4, N_x_4*2, embed_size_4]) # (batch_size, max_response_length, N_x*2, E)
 
             # sentiment embedding, shape (E, K)
 
@@ -320,7 +320,7 @@ class IEMSAModel(object):
             g_4 = tf.matmul(normalize_h_t, tf.transpose(normalize_sentiment))
 
             # h;t paired non-linearity
-            g_4 = tf.reshape(g_4, shape=(g_4.shape[0], g_4.shape[1], g_4.shape[2]/2, 2, -1)) # (batch, resp_len, 2*N_x, K) -> (b, resp_len, N_x, 2, K)
+            g_4 = tf.reshape(g_4, [g_4.shape[0], g_4.shape[1], g_4.shape[2]/2, 2, -1]) # (batch, resp_len, 2*N_x, K) -> (b, resp_len, N_x, 2, K)
             g_4 = tf.transpose(g_4, perm=(0, 1, 2, 4, 3)) # (b, resp, N_x, 2, K) -> (b, resp, N_x, K, 2)
             #g_1 = tf.reshape(g_1, shape=(-1, 2))    # (b, resp, N_x, K, 2)
             u_l_4 = tf.layers.dense(g_4, 2, activation='relu') # (b, resp, N_x, K, 2) -> (b, resp, N_x, K)
