@@ -162,50 +162,9 @@ def gen_batched_data(data):
                 except UnicodeDecodeError, e:
                     w = word
                 if w in relation:
-                    temp_entity.append(relation[w]) # custominfo
+                    entity[i][-1].append(relation[w]) # custominfo
                 else:
-                    temp_entity.append([['_NAF_H', '_NAF_R', '_NAF_T']])
-           # custominfo
-            sentiment = item['sentiment']
-            #print(sentiment)
-            tail_words = set([])  # to get unique words
-            for word_relations in temp_entity:
-                if len(word_relations) > 1 or (len(word_relations)!=0 and word_relations[-1][-1] != '_NAF_T'):
-                    # the word is a named entity with relations
-                    tail_words.update([r[2] for r in word_relations])
-            tail_words = list(tail_words)  # back to list
-            tail_words_np = np.array(tail_words)
-            tail_scores = []
-            for word in tail_words:
-                tail_scores.append(1-distance.cosine(embed[vocab_dict[sentiment]], embed[vocab_dict[word]])) 
-            tail_scores_np = np.array(tail_scores)
-            n = 0
-            if len(tail_words) > 8:
-                n = 4
-            elif len(tail_words) > 6:
-                n = 2
-            elif len(tail_words) > 4:
-                n = 1
-            if n > 0:
-                lowest_n_ind = np.argpartition(tail_scores_np, n)[:n-1]
-                filtered_tail_words = set(tail_words_np[lowest_n_ind])  # for faster lookup below
-                #print(filtered_tail_words)
-                filtered_temp_entity = []  # after removing relations which have the filtered tail words
-                for word_rels in temp_entity:
-                    updated_word_rels = []
-                    for rel in word_rels:
-                        if rel[2] not in filtered_tail_words:
-                            updated_word_rels.append(rel)
-                    filtered_temp_entity.append(updated_word_rels)
-                entity[i].append(filtered_temp_entity)
-            else:
-                entity[i].append(temp_entity)
-
-    # narrow down triplets here
-    # for each sentence (entity[i])
-    # relation is a dict
-    # relation[w] is a list of lists
-    # get_word_vector embed[vocab[word]]
+                    entity[i][-1].append([['_NAF_H', '_NAF_R', '_NAF_T']])
 
     max_response_length = [0, 0, 0, 0]
     max_triple_length = [0, 0, 0, 0]
