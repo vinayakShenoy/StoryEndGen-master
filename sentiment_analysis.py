@@ -36,18 +36,18 @@ for folder in os.listdir("data/outputs"):
                             #NEGATIVE
                             result = sentiment_analysis(line)[0]
                             if (result['label'] == 'Positive'):
-                                negative_sentence_average_sentiment += result
+                                negative_sentence_average_sentiment += result['score']
                             else:
-                                negative_sentence_average_sentiment -= result
+                                negative_sentence_average_sentiment -= result['score']
                             print("Sentiment NEGATIVE:: Line: %s :: Label %s :: Score %f" %(line, result['label'], result['score']))
 
                         else:
                             #POSITIVE
                             result = sentiment_analysis(line)[0]
                             if(result['label'] == 'Positive'):
-                                positive_sentence_average_sentiment += result
+                                positive_sentence_average_sentiment += result['score']
                             else:
-                                positive_sentence_average_sentiment -= result
+                                positive_sentence_average_sentiment -= result['score']
 
                             print("Sentiment Positive:: Line: %s :: Label %s :: Score %f" %(line, result['label'], result['score']))
 
