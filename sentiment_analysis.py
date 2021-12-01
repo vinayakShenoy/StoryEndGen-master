@@ -63,7 +63,8 @@ for folder in os.listdir("data/outputs"):
                 neg_op = negative_sentence_average_sentiment/len(hypothesis_lines)
                 f.write("%s :: %s :: Positive -> %s :: Negative -> %s \n" %(folder,filename, pos_op, neg_op))
 
-            except:
+            except Exception as e:
+                print(e)
                 print(" Failed for given filename %s" %(filename))
          f.write("\n")
     except:
