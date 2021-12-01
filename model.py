@@ -150,7 +150,9 @@ class IEMSAModel(object):
         head_3, relation_3, tail_3 = tf.split(entity_embedding_3, [num_embed_units] * 3, axis=3)
         head_4, relation_4, tail_4 = tf.split(entity_embedding_4, [num_embed_units] * 3, axis=3)
 
-        alpha = 0.5
+        alpha = tf.constant([0.5])
+        alpha = tf.expand_dims(tf.expand_dims(alpha, 0), 0)
+
         normalize_sentiment = tf.nn.l2_normalize(self.sentiment_embed, 1)
         normalize_sentiment = tf.transpose(normalize_sentiment)
         normalize_sentiment = tf.expand_dims(normalize_sentiment, 0)
@@ -194,14 +196,15 @@ class IEMSAModel(object):
                                    2])  # (batch, resp_len, 2*N_x, K) -> (b, resp_len, N_x, 2, K)
             g_1 = tf.transpose(g_1, perm=(0, 1, 2, 4, 3))  # (b, resp, N_x, 2, K) -> (b, resp, N_x, K, 2)
             u_l_1 = tf.layers.dense(g_1, 1, activation=tf.nn.relu)  # (b, resp, N_x, K, 2) -> (b, resp, N_x, K)
-            u_l_1 = tf.squeeze(u_l_1)
+            u_l_1_shape = tf.shape(u_l_1)
+            u_l_1 = tf.reshape(u_l_1, [u_l_1_shape[0], u_l_1_shape[1], u_l_1_shape[2], 2])
 
             # max pool
             m_l_1 = tf.reduce_max(u_l_1, axis=3)  # (b, resp, N_x, K) -> (b, resp, N_x)
             # softmax
             beta_l_1 = tf.nn.softmax(m_l_1, dim=2)  # (b, resp, N_x)
             graph_embed_leam_1 = tf.reduce_sum(
-                tf.expand_dims(beta_l_1, 3) * (tf.expand_dims(self.entity_mask_1, 3) * head_tail_1))
+                tf.expand_dims(beta_l_1, 3) * (tf.expand_dims(self.entity_mask_1, 3) * head_tail_1), axis=2)
 
             graph_embed_1 = alpha * graph_embed_1 + (1 - alpha) * graph_embed_leam_1
 
@@ -239,7 +242,8 @@ class IEMSAModel(object):
                                    2])  # (batch, resp_len, 2*N_x, K) -> (b, resp_len, N_x, 2, K)
             g_2 = tf.transpose(g_2, perm=(0, 1, 2, 4, 3))  # (b, resp, N_x, 2, K) -> (b, resp, N_x, K, 2)
             u_l_2 = tf.layers.dense(g_2, 1, activation=tf.nn.relu)  # (b, resp, N_x, K, 2) -> (b, resp, N_x, K)
-            u_l_2 = tf.squeeze(u_l_2)
+            u_l_2_shape = tf.shape(u_l_2)
+            u_l_2 = tf.reshape(u_l_2, [u_l_2_shape[0], u_l_2_shape[1], u_l_2_shape[2], 2])
 
             # max pool
             m_l_2 = tf.reduce_max(u_l_2, axis=3)  # (b, resp, N_x, K) -> (b, resp, N_x)
@@ -283,14 +287,15 @@ class IEMSAModel(object):
                                    2])  # (batch, resp_len, 2*N_x, K) -> (b, resp_len, N_x, 2, K)
             g_3 = tf.transpose(g_3, perm=(0, 1, 2, 4, 3))  # (b, resp, N_x, 2, K) -> (b, resp, N_x, K, 2)
             u_l_3 = tf.layers.dense(g_3, 1, activation=tf.nn.relu)  # (b, resp, N_x, K, 2) -> (b, resp, N_x, K)
-            u_l_3 = tf.squeeze(u_l_3)
+            u_l_3_shape = tf.shape(u_l_3)
+            u_l_3 = tf.reshape(u_l_3, [u_l_3_shape[0], u_l_3_shape[1], u_l_3_shape[2], 2])
 
             # max pool
             m_l_3 = tf.reduce_max(u_l_3, axis=3)  # (b, resp, N_x, K) -> (b, resp, N_x)
             # softmax
             beta_l_3 = tf.nn.softmax(m_l_3, dim=2)  # (b, resp, N_x)
             graph_embed_leam_3 = tf.reduce_sum(
-                tf.expand_dims(beta_l_3, 3) * (tf.expand_dims(self.entity_mask_3, 3) * head_tail_3))
+                tf.expand_dims(beta_l_3, 3) * (tf.expand_dims(self.entity_mask_3, 3) * head_tail_3), axis=2)
 
             graph_embed_3 = alpha * graph_embed_3 + (1 - alpha) * graph_embed_leam_3
             ####### LEAM : END ########
@@ -327,14 +332,15 @@ class IEMSAModel(object):
                                    2])  # (batch, resp_len, 2*N_x, K) -> (b, resp_len, N_x, 2, K)
             g_4 = tf.transpose(g_4, perm=(0, 1, 2, 4, 3))  # (b, resp, N_x, 2, K) -> (b, resp, N_x, K, 2)
             u_l_4 = tf.layers.dense(g_4, 1, activation=tf.nn.relu)  # (b, resp, N_x, K, 2) -> (b, resp, N_x, K)
-            u_l_4 = tf.squeeze(u_l_4)
+            u_l_4_shape = tf.shape(u_l_4)
+            u_l_4 = tf.reshape(u_l_4, [u_l_4_shape[0], u_l_4_shape[1], u_l_4_shape[2], 2])
 
             # max pool
             m_l_4 = tf.reduce_max(u_l_4, axis=3)  # (b, resp, N_x, K) -> (b, resp, N_x)
             # softmax
             beta_l_4 = tf.nn.softmax(m_l_4, dim=2)  # (b, resp, N_x)
             graph_embed_leam_4 = tf.reduce_sum(
-                tf.expand_dims(beta_l_4, 3) * (tf.expand_dims(self.entity_mask_4, 3) * head_tail_4))
+                tf.expand_dims(beta_l_4, 3) * (tf.expand_dims(self.entity_mask_4, 3) * head_tail_4), axis=2)
 
             graph_embed_4 = alpha * graph_embed_4 + (1 - alpha) * graph_embed_leam_4
 
