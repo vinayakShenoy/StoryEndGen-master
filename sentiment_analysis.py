@@ -1,4 +1,7 @@
 from transformers import pipeline
+import sys
+import os
+from datetime import datetime
 sentiment_analysis = pipeline("sentiment-analysis")
 
 now = datetime.now()
@@ -36,6 +39,7 @@ for folder in os.listdir("data/outputs"):
                                 negative_sentence_average_sentiment += result
                             else:
                                 negative_sentence_average_sentiment -= result
+                            print("Sentiment NEGATIVE:: Line: %s :: Label %s :: Score %f" %(line, result['label'], result['score']))
 
                         else:
                             #POSITIVE
@@ -44,6 +48,9 @@ for folder in os.listdir("data/outputs"):
                                 positive_sentence_average_sentiment += result
                             else:
                                 positive_sentence_average_sentiment -= result
+
+                            print("Sentiment Positive:: Line: %s :: Label %s :: Score %f" %(line, result['label'], result['score']))
+
 
                             # print("Label:", result['label'])
                             # print("Confidence Score:", result['score'])
