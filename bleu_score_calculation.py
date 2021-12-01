@@ -14,7 +14,7 @@ for folder in os.listdir("data/outputs"):
     try:
          if "output" not in folder:
             continue
-         f = open("data/bleu-outputs/%s" %(now), "a")
+         f = open("data/eval-outputs/bleu-%s" %(now), "a")
          for filename in os.listdir("data/outputs/%s" %(folder)):
             try:
                 if "txt" not in filename:
