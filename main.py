@@ -155,7 +155,7 @@ def gen_batched_data(data):
     entity = [[], [], [], []]
     for item in data:
         for i in range(4):
-            temp_entity = []  # custominfo
+            entity[i].append([])  # custominfo
             for word in item['post'][i]:
                 try:
                     w = lemma(word).encode("ascii")
