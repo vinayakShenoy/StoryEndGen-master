@@ -152,6 +152,9 @@ class IEMSAModel(object):
 
         alpha = 0.5
         normalize_sentiment = tf.nn.l2_normalize(self.sentiment_embed, 1)
+        normalize_sentiment = tf.transpose(normalize_sentiment)
+        normalize_sentiment = tf.expand_dims(normalize_sentiment, 0)
+        normalize_sentiment = tf.expand_dims(normalize_sentiment, 0)
         # sentence1
         with tf.variable_scope('graph_attention'):
             # [batch_size, max_reponse_length, max_triple_num, 2*embed_units]
@@ -173,35 +176,36 @@ class IEMSAModel(object):
             ####### LEAM : START ########
 
             # interleave head and tail, such that shape=
-            interleaved_head_tail_1 = tf.stack([head_1, tail_1], axis=3) # (batch_size, max_response_length, N_x, 2, E)
-            batch_size_1, max_response_length_1, N_x_1, _, embed_size_1 = interleaved_head_tail_1.shape
-            interleaved_head_tail_1 = tf.reshape(interleaved_head_tail_1, [batch_size_1, max_response_length_1, N_x_1*2, embed_size_1]) # (batch_size, max_response_length, N_x*2, E)
+            interleaved_head_tail_1 = tf.stack([head_1, tail_1], axis=3)  # (batch_size, max_response_length, N_x, 2, E)
+            ht_shape_1 = tf.shape(interleaved_head_tail_1)
+            interleaved_head_tail_1 = tf.reshape(interleaved_head_tail_1, [ht_shape_1[0], ht_shape_1[1], -1, 200])
 
-            # sentiment embedding, shape (E, K)
+            # sentiment expand dim (E, K)=> (b, r, E, K)
+            normalize_sentiment = tf.tile(normalize_sentiment, (ht_shape_1[0], ht_shape_1[1], 1, 1))
 
-            # cosine similarity G, normalized, shape (batch_size, max_response_length, 2*N_x, K)
+            # normalize V
             normalize_h_t = tf.nn.l2_normalize(interleaved_head_tail_1, 3)
 
-            # (b, max_response_length, 2*N_x, E) X (K, E) => (b, max_resp_Len, 2*N_x, K)
-            g_1 = tf.matmul(normalize_h_t, tf.transpose(normalize_sentiment))
+            # (b, max_response_length, 2*N_x, E) X (1,1, E,K) => (b, max_resp_Len, 2*N_x, K)
+            g_1 = tf.matmul(normalize_h_t, normalize_sentiment)
 
             # h;t paired non-linearity
-            g_1 = tf.reshape(g_1, [g_1.shape[0], g_1.shape[1], g_1.shape[2]/2, 2, -1]) # (batch, resp_len, 2*N_x, K) -> (b, resp_len, N_x, 2, K)
-            g_1 = tf.transpose(g_1, perm=(0, 1, 2, 4, 3)) # (b, resp, N_x, 2, K) -> (b, resp, N_x, K, 2)
-            #g_1 = tf.reshape(g_1, shape=(-1, 2))    # (b, resp, N_x, K, 2)
-            u_l_1 = tf.layers.dense(g_1, 2, activation='relu') # (b, resp, N_x, K, 2) -> (b, resp, N_x, K)
+            g_1 = tf.reshape(g_1, [tf.shape(g_1)[0], tf.shape(g_1)[1], -1, 2,
+                                   2])  # (batch, resp_len, 2*N_x, K) -> (b, resp_len, N_x, 2, K)
+            g_1 = tf.transpose(g_1, perm=(0, 1, 2, 4, 3))  # (b, resp, N_x, 2, K) -> (b, resp, N_x, K, 2)
+            u_l_1 = tf.layers.dense(g_1, 1, activation=tf.nn.relu)  # (b, resp, N_x, K, 2) -> (b, resp, N_x, K)
+            u_l_1 = tf.squeeze(u_l_1)
 
             # max pool
-            m_l_1 = tf.layers.max_pooling(u_l_1, axis=3) #(b, resp, N_x, K) -> (b, resp, N_x)
-
+            m_l_1 = tf.reduce_max(u_l_1, axis=3)  # (b, resp, N_x, K) -> (b, resp, N_x)
             # softmax
-            beta_l_1 = tf.nn.softmax(m_l_1, axis=2) # (b, resp, N_x)
+            beta_l_1 = tf.nn.softmax(m_l_1, dim=2)  # (b, resp, N_x)
+            graph_embed_leam_1 = tf.reduce_sum(
+                tf.expand_dims(beta_l_1, 3) * (tf.expand_dims(self.entity_mask_1, 3) * head_tail_1))
 
-            graph_embed_leam_1 = tf.reduce_sum(tf.expand_dims(beta_l_1, 3)*(tf.expand_dims(self.entity_mask_1, 3) * head_tail_1))
+            graph_embed_1 = alpha * graph_embed_1 + (1 - alpha) * graph_embed_leam_1
 
-            graph_embed_1 = alpha*graph_embed_1 + (1-alpha)*graph_embed_leam_1
-
-            ####### LEAM : END ########
+        ####### LEAM : END ########
 
         # sentence2
         with tf.variable_scope('graph_attention', reuse=True):
@@ -216,36 +220,35 @@ class IEMSAModel(object):
 
             ####### LEAM : START ########
 
-
             # interleave head and tail, such that shape=
-            interleaved_head_tail_2 = tf.stack([head_2, tail_2], axis=3) # (batch_size, max_response_length, N_x, 2, E)
-            batch_size_2, max_response_length_2, N_x_2, _, embed_size_2 = interleaved_head_tail_2.shape
-            interleaved_head_tail_2 = tf.reshape(interleaved_head_tail_2, [batch_size_2, max_response_length_2, N_x_2*2, embed_size_2]) # (batch_size, max_response_length, N_x*2, E)
+            interleaved_head_tail_2 = tf.stack([head_2, tail_2], axis=3)  # (batch_size, max_response_length, N_x, 2, E)
+            ht_shape_2 = tf.shape(interleaved_head_tail_2)
+            interleaved_head_tail_2 = tf.reshape(interleaved_head_tail_2, [ht_shape_2[0], ht_shape_2[1], -1, 200])
 
-            # sentiment embedding, shape (E, K)
+            # sentiment expand dim (E, K)=> (b, r, E, K)
+            normalize_sentiment = tf.tile(normalize_sentiment, (ht_shape_2[0], ht_shape_2[1], 1, 1))
 
-            # cosine similarity G, normalized, shape (batch_size, max_response_length, 2*N_x, K)
+            # normalize V
             normalize_h_t = tf.nn.l2_normalize(interleaved_head_tail_2, 3)
 
-            # (b, max_response_length, 2*N_x, E) X (K, E) => (b, max_resp_Len, 2*N_x, K)
-            g_2 = tf.matmul(normalize_h_t, tf.transpose(normalize_sentiment))
+            # (b, max_response_length, 2*N_x, E) X (1,1, E,K) => (b, max_resp_Len, 2*N_x, K)
+            g_2 = tf.matmul(normalize_h_t, normalize_sentiment)
 
             # h;t paired non-linearity
-            g_2 = tf.reshape(g_2, [g_2.shape[0], g_2.shape[1], g_2.shape[2]/2, 2, -1]) # (batch, resp_len, 2*N_x, K) -> (b, resp_len, N_x, 2, K)
-            g_2 = tf.transpose(g_2, perm=(0, 1, 2, 4, 3)) # (b, resp, N_x, 2, K) -> (b, resp, N_x, K, 2)
-            #g_1 = tf.reshape(g_1, shape=(-1, 2))    # (b, resp, N_x, K, 2)
-            u_l_2 = tf.layers.dense(g_2, 2, activation='relu') # (b, resp, N_x, K, 2) -> (b, resp, N_x, K)
+            g_2 = tf.reshape(g_2, [tf.shape(g_2)[0], tf.shape(g_2)[1], -1, 2,
+                                   2])  # (batch, resp_len, 2*N_x, K) -> (b, resp_len, N_x, 2, K)
+            g_2 = tf.transpose(g_2, perm=(0, 1, 2, 4, 3))  # (b, resp, N_x, 2, K) -> (b, resp, N_x, K, 2)
+            u_l_2 = tf.layers.dense(g_2, 1, activation=tf.nn.relu)  # (b, resp, N_x, K, 2) -> (b, resp, N_x, K)
+            u_l_2 = tf.squeeze(u_l_2)
 
             # max pool
-            m_l_2 = tf.layers.max_pooling(u_l_2, axis=3) #(b, resp, N_x, K) -> (b, resp, N_x)
-
+            m_l_2 = tf.reduce_max(u_l_2, axis=3)  # (b, resp, N_x, K) -> (b, resp, N_x)
             # softmax
-            beta_l_2 = tf.nn.softmax(m_l_2, axis=2)
+            beta_l_2 = tf.nn.softmax(m_l_2, dim=2)  # (b, resp, N_x)
+            graph_embed_leam_2 = tf.reduce_sum(
+                tf.expand_dims(beta_l_2, 3) * (tf.expand_dims(self.entity_mask_2, 3) * head_tail_2))
 
-            graph_embed_leam_2 = tf.reduce_sum(tf.expand_dims(beta_l_2, 3)*(tf.expand_dims(self.entity_mask_2, 3) * head_tail_2))
-
-            graph_embed_2 = alpha*graph_embed_2 + (1-alpha)*graph_embed_leam_2
-
+            graph_embed_2 = alpha * graph_embed_2 + (1 - alpha) * graph_embed_leam_2
             ####### LEAM : END ########
 
         # sentence3
@@ -261,35 +264,35 @@ class IEMSAModel(object):
 
             ####### LEAM : START ########
 
-
             # interleave head and tail, such that shape=
-            interleaved_head_tail_3 = tf.stack([head_3, tail_3], axis=3) # (batch_size, max_response_length, N_x, 2, E)
-            batch_size_3, max_response_length_3, N_x_3, _, embed_size_3 = interleaved_head_tail_3.shape
-            interleaved_head_tail_3 = tf.reshape(interleaved_head_tail_3, [batch_size_3, max_response_length_3, N_x_3*2, embed_size_3]) # (batch_size, max_response_length, N_x*2, E)
+            interleaved_head_tail_3 = tf.stack([head_3, tail_3], axis=3)  # (batch_size, max_response_length, N_x, 2, E)
+            ht_shape_3 = tf.shape(interleaved_head_tail_3)
+            interleaved_head_tail_3 = tf.reshape(interleaved_head_tail_3, [ht_shape_3[0], ht_shape_3[1], -1, 200])
 
-            # sentiment embedding, shape (E, K)
+            # sentiment expand dim (E, K)=> (b, r, E, K)
+            normalize_sentiment = tf.tile(normalize_sentiment, (ht_shape_3[0], ht_shape_3[1], 1, 1))
 
-            # cosine similarity G, normalized, shape (batch_size, max_response_length, 2*N_x, K)
+            # normalize V
             normalize_h_t = tf.nn.l2_normalize(interleaved_head_tail_3, 3)
 
-            # (b, max_response_length, 2*N_x, E) X (K, E) => (b, max_resp_Len, 2*N_x, K)
-            g_3 = tf.matmul(normalize_h_t, tf.transpose(normalize_sentiment))
+            # (b, max_response_length, 2*N_x, E) X (1,1, E,K) => (b, max_resp_Len, 2*N_x, K)
+            g_3 = tf.matmul(normalize_h_t, normalize_sentiment)
 
             # h;t paired non-linearity
-            g_3 = tf.reshape(g_3, [g_3.shape[0], g_3.shape[1], g_3.shape[2]/2, 2, -1]) # (batch, resp_len, 2*N_x, K) -> (b, resp_len, N_x, 2, K)
-            g_3 = tf.transpose(g_3, perm=(0, 1, 2, 4, 3)) # (b, resp, N_x, 2, K) -> (b, resp, N_x, K, 2)
-            #g_1 = tf.reshape(g_1, shape=(-1, 2))    # (b, resp, N_x, K, 2)
-            u_l_3 = tf.layers.dense(g_3, 2, activation='relu') # (b, resp, N_x, K, 2) -> (b, resp, N_x, K)
+            g_3 = tf.reshape(g_3, [tf.shape(g_3)[0], tf.shape(g_3)[1], -1, 2,
+                                   2])  # (batch, resp_len, 2*N_x, K) -> (b, resp_len, N_x, 2, K)
+            g_3 = tf.transpose(g_3, perm=(0, 1, 2, 4, 3))  # (b, resp, N_x, 2, K) -> (b, resp, N_x, K, 2)
+            u_l_3 = tf.layers.dense(g_3, 1, activation=tf.nn.relu)  # (b, resp, N_x, K, 2) -> (b, resp, N_x, K)
+            u_l_3 = tf.squeeze(u_l_3)
 
             # max pool
-            m_l_3 = tf.layers.max_pooling(u_l_3, axis=3) #(b, resp, N_x, K) -> (b, resp, N_x)
-
+            m_l_3 = tf.reduce_max(u_l_3, axis=3)  # (b, resp, N_x, K) -> (b, resp, N_x)
             # softmax
-            beta_l_3 = tf.nn.softmax(m_l_3, axis=2)
+            beta_l_3 = tf.nn.softmax(m_l_3, dim=2)  # (b, resp, N_x)
+            graph_embed_leam_3 = tf.reduce_sum(
+                tf.expand_dims(beta_l_3, 3) * (tf.expand_dims(self.entity_mask_3, 3) * head_tail_3))
 
-            graph_embed_leam_3 = tf.reduce_sum(tf.expand_dims(beta_l_3, 3)*(tf.expand_dims(self.entity_mask_3, 3) * head_tail_3))
-
-            graph_embed_3 = alpha*graph_embed_3 + (1-alpha)*graph_embed_leam_3
+            graph_embed_3 = alpha * graph_embed_3 + (1 - alpha) * graph_embed_leam_3
             ####### LEAM : END ########
 
             # sentence4
@@ -305,37 +308,37 @@ class IEMSAModel(object):
 
             ####### LEAM : START ########
 
-
             # interleave head and tail, such that shape=
-            interleaved_head_tail_4 = tf.stack([head_4, tail_4], axis=3) # (batch_size, max_response_length, N_x, 2, E)
-            batch_size_4, max_response_length_4, N_x_4, _, embed_size_4 = interleaved_head_tail_4.shape
-            interleaved_head_tail_4 = tf.reshape(interleaved_head_tail_4, [batch_size_4, max_response_length_4, N_x_4*2, embed_size_4]) # (batch_size, max_response_length, N_x*2, E)
+            interleaved_head_tail_4 = tf.stack([head_4, tail_4], axis=3)  # (batch_size, max_response_length, N_x, 2, E)
+            ht_shape_4 = tf.shape(interleaved_head_tail_4)
+            interleaved_head_tail_4 = tf.reshape(interleaved_head_tail_4, [ht_shape_4[0], ht_shape_4[1], -1, 200])
 
-            # sentiment embedding, shape (E, K)
+            # sentiment expand dim (E, K)=> (b, r, E, K)
+            normalize_sentiment = tf.tile(normalize_sentiment, (ht_shape_4[0], ht_shape_4[1], 1, 1))
 
-            # cosine similarity G, normalized, shape (batch_size, max_response_length, 2*N_x, K)
+            # normalize V
             normalize_h_t = tf.nn.l2_normalize(interleaved_head_tail_4, 3)
 
-            # (b, max_response_length, 2*N_x, E) X (K, E) => (b, max_resp_Len, 2*N_x, K)
-            g_4 = tf.matmul(normalize_h_t, tf.transpose(normalize_sentiment))
+            # (b, max_response_length, 2*N_x, E) X (1,1, E,K) => (b, max_resp_Len, 2*N_x, K)
+            g_4 = tf.matmul(normalize_h_t, normalize_sentiment)
 
             # h;t paired non-linearity
-            g_4 = tf.reshape(g_4, [g_4.shape[0], g_4.shape[1], g_4.shape[2]/2, 2, -1]) # (batch, resp_len, 2*N_x, K) -> (b, resp_len, N_x, 2, K)
-            g_4 = tf.transpose(g_4, perm=(0, 1, 2, 4, 3)) # (b, resp, N_x, 2, K) -> (b, resp, N_x, K, 2)
-            #g_1 = tf.reshape(g_1, shape=(-1, 2))    # (b, resp, N_x, K, 2)
-            u_l_4 = tf.layers.dense(g_4, 2, activation='relu') # (b, resp, N_x, K, 2) -> (b, resp, N_x, K)
+            g_4 = tf.reshape(g_4, [tf.shape(g_4)[0], tf.shape(g_4)[1], -1, 2,
+                                   2])  # (batch, resp_len, 2*N_x, K) -> (b, resp_len, N_x, 2, K)
+            g_4 = tf.transpose(g_4, perm=(0, 1, 2, 4, 3))  # (b, resp, N_x, 2, K) -> (b, resp, N_x, K, 2)
+            u_l_4 = tf.layers.dense(g_4, 1, activation=tf.nn.relu)  # (b, resp, N_x, K, 2) -> (b, resp, N_x, K)
+            u_l_4 = tf.squeeze(u_l_4)
 
             # max pool
-            m_l_4 = tf.layers.max_pooling(u_l_4, axis=3) #(b, resp, N_x, K) -> (b, resp, N_x)
-
+            m_l_4 = tf.reduce_max(u_l_4, axis=3)  # (b, resp, N_x, K) -> (b, resp, N_x)
             # softmax
-            beta_l_4 = tf.nn.softmax(m_l_4, axis=2)
+            beta_l_4 = tf.nn.softmax(m_l_4, dim=2)  # (b, resp, N_x)
+            graph_embed_leam_4 = tf.reduce_sum(
+                tf.expand_dims(beta_l_4, 3) * (tf.expand_dims(self.entity_mask_4, 3) * head_tail_4))
 
-            graph_embed_leam_4 = tf.reduce_sum(tf.expand_dims(beta_l_4, 3)*(tf.expand_dims(self.entity_mask_4, 3) * head_tail_4))
+            graph_embed_4 = alpha * graph_embed_4 + (1 - alpha) * graph_embed_leam_4
 
-            graph_embed_4 = alpha*graph_embed_4 + (1-alpha)*graph_embed_leam_4
-
-            ####### LEAM : END ########
+        ####### LEAM : END ########
 
         if use_lstm:
             cell = MultiRNNCell([LSTMCell(num_units)] * num_layers)
