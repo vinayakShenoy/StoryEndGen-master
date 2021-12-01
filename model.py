@@ -183,13 +183,13 @@ class IEMSAModel(object):
             interleaved_head_tail_1 = tf.reshape(interleaved_head_tail_1, [ht_shape_1[0], ht_shape_1[1], -1, 200])
 
             # sentiment expand dim (E, K)=> (b, r, E, K)
-            normalize_sentiment = tf.tile(normalize_sentiment, (ht_shape_1[0], ht_shape_1[1], 1, 1))
+            normalize_sentiment_1 = tf.tile(normalize_sentiment, (ht_shape_1[0], ht_shape_1[1], 1, 1))
 
             # normalize V
-            normalize_h_t = tf.nn.l2_normalize(interleaved_head_tail_1, 3)
+            normalize_h_t_1 = tf.nn.l2_normalize(interleaved_head_tail_1, 3)
 
             # (b, max_response_length, 2*N_x, E) X (1,1, E,K) => (b, max_resp_Len, 2*N_x, K)
-            g_1 = tf.matmul(normalize_h_t, normalize_sentiment)
+            g_1 = tf.matmul(normalize_h_t_1, normalize_sentiment_1)
 
             # h;t paired non-linearity
             g_1 = tf.reshape(g_1, [tf.shape(g_1)[0], tf.shape(g_1)[1], -1, 2,
@@ -202,7 +202,7 @@ class IEMSAModel(object):
             # max pool
             m_l_1 = tf.reduce_max(u_l_1, axis=3)  # (b, resp, N_x, K) -> (b, resp, N_x)
             # softmax
-            beta_l_1 = tf.nn.softmax(m_l_1, dim=2)  # (b, resp, N_x)
+            beta_l_1 = tf.nn.softmax(m_l_1)  # (b, resp, N_x)
             graph_embed_leam_1 = tf.reduce_sum(
                 tf.expand_dims(beta_l_1, 3) * (tf.expand_dims(self.entity_mask_1, 3) * head_tail_1), axis=2)
 
@@ -229,13 +229,13 @@ class IEMSAModel(object):
             interleaved_head_tail_2 = tf.reshape(interleaved_head_tail_2, [ht_shape_2[0], ht_shape_2[1], -1, 200])
 
             # sentiment expand dim (E, K)=> (b, r, E, K)
-            normalize_sentiment = tf.tile(normalize_sentiment, (ht_shape_2[0], ht_shape_2[1], 1, 1))
+            normalize_sentiment_2 = tf.tile(normalize_sentiment, (ht_shape_2[0], ht_shape_2[1], 1, 1))
 
             # normalize V
-            normalize_h_t = tf.nn.l2_normalize(interleaved_head_tail_2, 3)
+            normalize_h_t_2 = tf.nn.l2_normalize(interleaved_head_tail_2, 3)
 
             # (b, max_response_length, 2*N_x, E) X (1,1, E,K) => (b, max_resp_Len, 2*N_x, K)
-            g_2 = tf.matmul(normalize_h_t, normalize_sentiment)
+            g_2 = tf.matmul(normalize_h_t_2, normalize_sentiment_2)
 
             # h;t paired non-linearity
             g_2 = tf.reshape(g_2, [tf.shape(g_2)[0], tf.shape(g_2)[1], -1, 2,
@@ -248,7 +248,7 @@ class IEMSAModel(object):
             # max pool
             m_l_2 = tf.reduce_max(u_l_2, axis=3)  # (b, resp, N_x, K) -> (b, resp, N_x)
             # softmax
-            beta_l_2 = tf.nn.softmax(m_l_2, dim=2)  # (b, resp, N_x)
+            beta_l_2 = tf.nn.softmax(m_l_2)  # (b, resp, N_x)
             graph_embed_leam_2 = tf.reduce_sum(
                 tf.expand_dims(beta_l_2, 3) * (tf.expand_dims(self.entity_mask_2, 3) * head_tail_2))
 
@@ -274,13 +274,13 @@ class IEMSAModel(object):
             interleaved_head_tail_3 = tf.reshape(interleaved_head_tail_3, [ht_shape_3[0], ht_shape_3[1], -1, 200])
 
             # sentiment expand dim (E, K)=> (b, r, E, K)
-            normalize_sentiment = tf.tile(normalize_sentiment, (ht_shape_3[0], ht_shape_3[1], 1, 1))
+            normalize_sentiment_3 = tf.tile(normalize_sentiment, (ht_shape_3[0], ht_shape_3[1], 1, 1))
 
             # normalize V
-            normalize_h_t = tf.nn.l2_normalize(interleaved_head_tail_3, 3)
+            normalize_h_t_3 = tf.nn.l2_normalize(interleaved_head_tail_3, 3)
 
             # (b, max_response_length, 2*N_x, E) X (1,1, E,K) => (b, max_resp_Len, 2*N_x, K)
-            g_3 = tf.matmul(normalize_h_t, normalize_sentiment)
+            g_3 = tf.matmul(normalize_h_t_3, normalize_sentiment_3)
 
             # h;t paired non-linearity
             g_3 = tf.reshape(g_3, [tf.shape(g_3)[0], tf.shape(g_3)[1], -1, 2,
@@ -293,7 +293,7 @@ class IEMSAModel(object):
             # max pool
             m_l_3 = tf.reduce_max(u_l_3, axis=3)  # (b, resp, N_x, K) -> (b, resp, N_x)
             # softmax
-            beta_l_3 = tf.nn.softmax(m_l_3, dim=2)  # (b, resp, N_x)
+            beta_l_3 = tf.nn.softmax(m_l_3)  # (b, resp, N_x)
             graph_embed_leam_3 = tf.reduce_sum(
                 tf.expand_dims(beta_l_3, 3) * (tf.expand_dims(self.entity_mask_3, 3) * head_tail_3), axis=2)
 
@@ -319,13 +319,13 @@ class IEMSAModel(object):
             interleaved_head_tail_4 = tf.reshape(interleaved_head_tail_4, [ht_shape_4[0], ht_shape_4[1], -1, 200])
 
             # sentiment expand dim (E, K)=> (b, r, E, K)
-            normalize_sentiment = tf.tile(normalize_sentiment, (ht_shape_4[0], ht_shape_4[1], 1, 1))
+            normalize_sentiment_4 = tf.tile(normalize_sentiment, (ht_shape_4[0], ht_shape_4[1], 1, 1))
 
             # normalize V
-            normalize_h_t = tf.nn.l2_normalize(interleaved_head_tail_4, 3)
+            normalize_h_t_4 = tf.nn.l2_normalize(interleaved_head_tail_4, 3)
 
             # (b, max_response_length, 2*N_x, E) X (1,1, E,K) => (b, max_resp_Len, 2*N_x, K)
-            g_4 = tf.matmul(normalize_h_t, normalize_sentiment)
+            g_4 = tf.matmul(normalize_h_t_4, normalize_sentiment_4)
 
             # h;t paired non-linearity
             g_4 = tf.reshape(g_4, [tf.shape(g_4)[0], tf.shape(g_4)[1], -1, 2,
@@ -338,7 +338,7 @@ class IEMSAModel(object):
             # max pool
             m_l_4 = tf.reduce_max(u_l_4, axis=3)  # (b, resp, N_x, K) -> (b, resp, N_x)
             # softmax
-            beta_l_4 = tf.nn.softmax(m_l_4, dim=2)  # (b, resp, N_x)
+            beta_l_4 = tf.nn.softmax(m_l_4)  # (b, resp, N_x)
             graph_embed_leam_4 = tf.reduce_sum(
                 tf.expand_dims(beta_l_4, 3) * (tf.expand_dims(self.entity_mask_4, 3) * head_tail_4), axis=2)
 
