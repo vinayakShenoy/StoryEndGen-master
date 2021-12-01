@@ -312,18 +312,20 @@ def inference(model, sess, dataset):
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
 with tf.Session(config=config) as sess:
+    data_train = load_data(FLAGS.data_dir, 'train')
+    data_dev = load_data(FLAGS.data_dir, 'val')
+    data_test = load_data(FLAGS.data_dir, 'test')
+
+    # load the vocab
+    vocab, embed, vocab_dict = build_vocab(FLAGS.data_dir, data_train)
+
+    # load the relations from triples_shrink.txt
+    relation = load_relation(FLAGS.data_dir)
+
+    # load sentiment embed for happy and sad
+    sentiment_embed = np.stack([embed[vocab_dict['happy']], embed[vocab_dict['sad']]])
+
     if FLAGS.is_train:
-        data_train = load_data(FLAGS.data_dir, 'train')
-        data_dev = load_data(FLAGS.data_dir, 'val')
-        data_test = load_data(FLAGS.data_dir, 'test')
-
-        # load the vocab
-        vocab, embed, vocab_dict = build_vocab(FLAGS.data_dir, data_train)
-
-        # load the relations from triples_shrink.txt
-        relation = load_relation(FLAGS.data_dir)
-
-        sentiment_embed = np.stack([embed[vocab_dict['happy']], embed[vocab_dict['sad']]])
 
         model = IEMSAModel(
             FLAGS.symbols,
@@ -377,7 +379,7 @@ with tf.Session(config=config) as sess:
             FLAGS.embed_units,
             FLAGS.units,
             FLAGS.layers,
-            emotion_targets=None,  # line added here
+            sentiment_embed,  # line added here
             is_train=False,
             vocab=None)
 
