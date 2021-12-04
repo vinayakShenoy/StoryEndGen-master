@@ -207,7 +207,7 @@ class IEMSAModel(object):
 
             u_l_argmax_1 = tf.argmax(u_l_1, axis=3) # (b, r, n_x)
             # class_labels shape (b, 1) => (b, tile(r), tile(n_x))
-            class_labels_1 = tf.tile(class_labels, (1, ht_shape_1[1], ht_shape[2]))
+            class_labels_1 = tf.tile(class_labels, (1, ht_shape_1[1], ht_shape_1[2]))
             boosting_indices_1 =  tf.where(u_l_argmax_1==class_labels_1, 1.25, 1) # (b, r, n_x)
 
             # softmax
