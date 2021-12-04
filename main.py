@@ -33,9 +33,9 @@ tf.app.flags.DEFINE_string("inference_path", "", "Set filename of inference, def
 
 FLAGS = tf.app.flags.FLAGS
 
-SENTIMENTS = ['happy', 'sad']#, 'angry', 'shock', 'surprise']
-sentiment2id = {'happy': 0, 'sad': 1, 'angry': 2, 'shock': 3, 'surprise': 4}
-id2sentiment = {0: 'happy', 1: 'sad', 2: 'angry', 3: 'shock', 4: 'surprise'}
+SENTIMENTS = ['positive', 'negative']#, 'angry', 'shock', 'surprise']
+sentiment2id = {'positive': 0, 'negative': 1, 'angry': 2, 'shock': 3, 'surprise': 4}
+id2sentiment = {0: 'positive', 1: 'negative', 2: 'angry', 3: 'shock', 4: 'surprise'}
 
 
 def load_data(path, fname):
@@ -48,9 +48,25 @@ def load_data(path, fname):
     with open('%s/%s.response' % (path, fname)) as f:
         response = [line.strip().split() for line in f.readlines()]
     data = []
+    flag = False
     for p, r in zip(post, response):
         # custominfo
+        #print(p)
+        #print(r)
         for sentiment in SENTIMENTS:
+            p_update  = []
+            #r_update = []
+            #p_lines = p.split(".")
+            for line in p:
+	        line.insert(0,  sentiment)
+                #if flag == False:
+                    #print(p_update)
+                    #print(line)
+                    #flag = True
+            if flag == False:
+                print(p[0])
+                flag = True
+            r.insert(0, sentiment)
             data.append({'post': p, 'response': r, 'sentiment': sentiment})
     return data
 
@@ -134,6 +150,8 @@ def gen_batched_data(data):
     posts_1, posts_2, posts_3, posts_4, posts_length_1, posts_length_2, posts_length_3, posts_length_4, responses, responses_length = [], [], [], [], [], [], [], [], [], []
 
     sentiments = [sentiment2id[item['sentiment']] for item in data]  # custominfo
+    # average sentiment embedding
+    avg_sentiment = np.mean(np.array([embed[vocab_dict[sentiment]] for sentiment in SENTIMENTS]), axis=0)
 
     def padding(sent, l):
         return sent + ['_EOS'] + ['_PAD'] * (l - len(sent) - 1)
@@ -177,7 +195,7 @@ def gen_batched_data(data):
             tail_words_np = np.array(tail_words)
             tail_scores = []
             for word in tail_words:
-                tail_scores.append(1-distance.cosine(embed[vocab_dict[sentiment]], embed[vocab_dict[word]])) 
+                tail_scores.append(1-distance.cosine(embed[vocab_dict[sentiment]]-avg_sentiment, embed[vocab_dict[word]]))
             tail_scores_np = np.array(tail_scores)
             n = 0
             if len(tail_words) > 8:
