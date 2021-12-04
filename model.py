@@ -150,7 +150,8 @@ class IEMSAModel(object):
         head_3, relation_3, tail_3 = tf.split(entity_embedding_3, [num_embed_units] * 3, axis=3)
         head_4, relation_4, tail_4 = tf.split(entity_embedding_4, [num_embed_units] * 3, axis=3)
 
-        alpha = tf.constant([0.5])
+
+        alpha = tf.constant([0.8])
         alpha = tf.expand_dims(tf.expand_dims(alpha, 0), 0)
 
         normalize_sentiment = tf.nn.l2_normalize(self.sentiment_embed, 1)
@@ -158,8 +159,8 @@ class IEMSAModel(object):
         normalize_sentiment = tf.expand_dims(normalize_sentiment, 0)
         normalize_sentiment = tf.expand_dims(normalize_sentiment, 0)
 
-        class_labels = tf.argmax(self.sentiments, axis=1) # decoded one hot s
-
+        class_labels = tf.argmax(self.sentiments, axis=1) # shape: (b, 1)  decoded one hot s
+        class_labels = tf.reshape(class_labels, [tf.shape(class_labels)[0], 1, 1])
         # sentence1
         with tf.variable_scope('graph_attention'):
             # [batch_size, max_reponse_length, max_triple_num, 2*embed_units]
@@ -207,7 +208,7 @@ class IEMSAModel(object):
 
             u_l_argmax_1 = tf.argmax(u_l_1, axis=3) # (b, r, n_x)
             # class_labels shape (b, 1) => expand_dims => (b, tile(r), tile(n_x))
-            class_labels_1 = tf.tile(tf.reshape(class_labels, [ht_shape_1[0], 1, 1]), (1, ht_shape_1[1], ht_shape_1[2]))
+            class_labels_1 = tf.tile(class_labels, (1, ht_shape_1[1], ht_shape_1[2]))
             boosting_indices_1 =  tf.where(u_l_argmax_1==class_labels_1, 1.25, 1) # (b, r, n_x)
 
             # softmax
@@ -261,7 +262,7 @@ class IEMSAModel(object):
 
             u_l_argmax_2 = tf.argmax(u_l_2, axis=3)  # (b, r, n_x)
             # class_labels shape (b, 1) => expand_dims => (b, tile(r), tile(n_x))
-            class_labels_2 = tf.tile(tf.reshape(class_labels, [ht_shape_2[0], 1, 1]), (1, ht_shape_2[1], ht_shape_2[2]))
+            class_labels_2 = tf.tile(class_labels, (1, ht_shape_2[1], ht_shape_2[2]))
             boosting_indices_2 = tf.where(u_l_argmax_2 == class_labels_2, 1.25, 1)  # (b, r, n_x)
 
             # softmax
@@ -313,7 +314,7 @@ class IEMSAModel(object):
 
             u_l_argmax_3 = tf.argmax(u_l_3, axis=3)  # (b, r, n_x)
             # class_labels shape (b, 1) => expand_dims => (b, tile(r), tile(n_x))
-            class_labels_3 = tf.tile(tf.reshape(class_labels, [ht_shape_3[0], 1, 1]), (1, ht_shape_3[1], ht_shape_3[2]))
+            class_labels_3 = tf.tile(class_labels, (1, ht_shape_3[1], ht_shape_3[2]))
             boosting_indices_3 = tf.where(u_l_argmax_3 == class_labels_3, 1.25, 1)  # (b, r, n_x)
 
             # softmax
@@ -365,7 +366,7 @@ class IEMSAModel(object):
 
             u_l_argmax_4 = tf.argmax(u_l_4, axis=3)  # (b, r, n_x)
             # class_labels shape (b, 1) => expand_dims => (b, tile(r), tile(n_x))
-            class_labels_4 = tf.tile(tf.reshape(class_labels, [ht_shape_4[0], 1, 1]), (1, ht_shape_4[1], ht_shape_4[2]))
+            class_labels_4 = tf.tile(class_labels, (1, ht_shape_4[1], ht_shape_4[2]))
             boosting_indices_4 = tf.where(u_l_argmax_4 == class_labels_4, 1.25, 1)  # (b, r, n_x)
 
             # softmax
