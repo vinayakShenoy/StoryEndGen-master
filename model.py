@@ -158,7 +158,7 @@ class IEMSAModel(object):
         normalize_sentiment = tf.expand_dims(normalize_sentiment, 0)
         normalize_sentiment = tf.expand_dims(normalize_sentiment, 0)
 
-        class_labels = tf.argmax(self.sentiments, axis=1) # decoded one hot
+        class_labels = tf.argmax(self.sentiments, axis=1) # decoded one hot s
 
         # sentence1
         with tf.variable_scope('graph_attention'):
@@ -206,8 +206,8 @@ class IEMSAModel(object):
             m_l_1 = tf.reduce_max(u_l_1, axis=3)  # (b, resp, N_x, K) -> (b, resp, N_x)
 
             u_l_argmax_1 = tf.argmax(u_l_1, axis=3) # (b, r, n_x)
-            # class_labels shape (b, 1) => (b, tile(r), tile(n_x))
-            class_labels_1 = tf.tile(class_labels, (1, ht_shape_1[1], ht_shape_1[2]))
+            # class_labels shape (b, 1) => expand_dims => (b, tile(r), tile(n_x))
+            class_labels_1 = tf.tile(tf.expand_dims(class_labels, 2), (1, ht_shape_1[1], ht_shape_1[2]))
             boosting_indices_1 =  tf.where(u_l_argmax_1==class_labels_1, 1.25, 1) # (b, r, n_x)
 
             # softmax
