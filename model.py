@@ -157,6 +157,9 @@ class IEMSAModel(object):
         normalize_sentiment = tf.transpose(normalize_sentiment)
         normalize_sentiment = tf.expand_dims(normalize_sentiment, 0)
         normalize_sentiment = tf.expand_dims(normalize_sentiment, 0)
+
+        class_labels = tf.argmax(self.sentiments, axis=1) # decoded one hot
+
         # sentence1
         with tf.variable_scope('graph_attention'):
             # [batch_size, max_reponse_length, max_triple_num, 2*embed_units]
@@ -201,10 +204,18 @@ class IEMSAModel(object):
 
             # max pool
             m_l_1 = tf.reduce_max(u_l_1, axis=3)  # (b, resp, N_x, K) -> (b, resp, N_x)
+
+            u_l_argmax_1 = tf.argmax(u_l_1, axis=3) # (b, r, n_x)
+            # class_labels shape (b, 1) => (b, tile(r), tile(n_x))
+            class_labels_1 = tf.tile(class_labels, (1, ht_shape_1[1], ht_shape[2]))
+            boosting_indices_1 =  tf.where(u_l_argmax_1==class_labels_1, 1.25, 1) # (b, r, n_x)
+
             # softmax
             beta_l_1 = tf.nn.softmax(m_l_1)  # (b, resp, N_x)
+            # boosting
+            boosted_beta_l_1 = tf.nn.softmax(beta_l_1*boosting_indices_1)
             graph_embed_leam_1 = tf.reduce_sum(
-                tf.expand_dims(beta_l_1, 3) * (tf.expand_dims(self.entity_mask_1, 3) * head_tail_1), axis=2)
+                tf.expand_dims(boosted_beta_l_1, 3) * (tf.expand_dims(self.entity_mask_1, 3) * head_tail_1), axis=2)
 
             graph_embed_1 = alpha * graph_embed_1 + (1 - alpha) * graph_embed_leam_1
 
