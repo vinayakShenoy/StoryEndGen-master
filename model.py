@@ -207,7 +207,7 @@ class IEMSAModel(object):
 
             u_l_argmax_1 = tf.argmax(u_l_1, axis=3) # (b, r, n_x)
             # class_labels shape (b, 1) => expand_dims => (b, tile(r), tile(n_x))
-            class_labels_1 = tf.tile(tf.expand_dims(class_labels, 2), (1, ht_shape_1[1], ht_shape_1[2]))
+            class_labels_1 = tf.tile(tf.reshape(class_labels, [ht_shape_1[0], 1, 1]), (1, ht_shape_1[1], ht_shape_1[2]))
             boosting_indices_1 =  tf.where(u_l_argmax_1==class_labels_1, 1.25, 1) # (b, r, n_x)
 
             # softmax
@@ -258,10 +258,17 @@ class IEMSAModel(object):
 
             # max pool
             m_l_2 = tf.reduce_max(u_l_2, axis=3)  # (b, resp, N_x, K) -> (b, resp, N_x)
+
+            u_l_argmax_2 = tf.argmax(u_l_2, axis=3)  # (b, r, n_x)
+            # class_labels shape (b, 1) => expand_dims => (b, tile(r), tile(n_x))
+            class_labels_2 = tf.tile(tf.reshape(class_labels, [ht_shape_2[0], 1, 1]), (1, ht_shape_2[1], ht_shape_2[2]))
+            boosting_indices_2 = tf.where(u_l_argmax_2 == class_labels_2, 1.25, 1)  # (b, r, n_x)
+
             # softmax
             beta_l_2 = tf.nn.softmax(m_l_2)  # (b, resp, N_x)
+            boosted_beta_l_2 = tf.nn.softmax(beta_l_2 * boosting_indices_2)
             graph_embed_leam_2 = tf.reduce_sum(
-                tf.expand_dims(beta_l_2, 3) * (tf.expand_dims(self.entity_mask_2, 3) * head_tail_2))
+                tf.expand_dims(boosted_beta_l_2, 3) * (tf.expand_dims(self.entity_mask_2, 3) * head_tail_2))
 
             graph_embed_2 = alpha * graph_embed_2 + (1 - alpha) * graph_embed_leam_2
             ####### LEAM : END ########
@@ -303,10 +310,17 @@ class IEMSAModel(object):
 
             # max pool
             m_l_3 = tf.reduce_max(u_l_3, axis=3)  # (b, resp, N_x, K) -> (b, resp, N_x)
+
+            u_l_argmax_3 = tf.argmax(u_l_3, axis=3)  # (b, r, n_x)
+            # class_labels shape (b, 1) => expand_dims => (b, tile(r), tile(n_x))
+            class_labels_3 = tf.tile(tf.reshape(class_labels, [ht_shape_3[0], 1, 1]), (1, ht_shape_3[1], ht_shape_3[2]))
+            boosting_indices_3 = tf.where(u_l_argmax_3 == class_labels_3, 1.25, 1)  # (b, r, n_x)
+
             # softmax
             beta_l_3 = tf.nn.softmax(m_l_3)  # (b, resp, N_x)
+            boosted_beta_l_3 = tf.nn.softmax(beta_l_3 * boosting_indices_3)
             graph_embed_leam_3 = tf.reduce_sum(
-                tf.expand_dims(beta_l_3, 3) * (tf.expand_dims(self.entity_mask_3, 3) * head_tail_3), axis=2)
+                tf.expand_dims(boosted_beta_l_3, 3) * (tf.expand_dims(self.entity_mask_3, 3) * head_tail_3), axis=2)
 
             graph_embed_3 = alpha * graph_embed_3 + (1 - alpha) * graph_embed_leam_3
             ####### LEAM : END ########
@@ -348,10 +362,18 @@ class IEMSAModel(object):
 
             # max pool
             m_l_4 = tf.reduce_max(u_l_4, axis=3)  # (b, resp, N_x, K) -> (b, resp, N_x)
+
+            u_l_argmax_4 = tf.argmax(u_l_4, axis=3)  # (b, r, n_x)
+            # class_labels shape (b, 1) => expand_dims => (b, tile(r), tile(n_x))
+            class_labels_4 = tf.tile(tf.reshape(class_labels, [ht_shape_4[0], 1, 1]), (1, ht_shape_4[1], ht_shape_4[2]))
+            boosting_indices_4 = tf.where(u_l_argmax_4 == class_labels_4, 1.25, 1)  # (b, r, n_x)
+
             # softmax
             beta_l_4 = tf.nn.softmax(m_l_4)  # (b, resp, N_x)
+            boosted_beta_l_4 = tf.nn.softmax(beta_l_4 * boosting_indices_4)
+
             graph_embed_leam_4 = tf.reduce_sum(
-                tf.expand_dims(beta_l_4, 3) * (tf.expand_dims(self.entity_mask_4, 3) * head_tail_4), axis=2)
+                tf.expand_dims(boosted_beta_l_4, 3) * (tf.expand_dims(self.entity_mask_4, 3) * head_tail_4), axis=2)
 
             graph_embed_4 = alpha * graph_embed_4 + (1 - alpha) * graph_embed_leam_4
 
